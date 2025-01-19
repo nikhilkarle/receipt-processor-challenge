@@ -3,12 +3,17 @@ from __future__ import annotations
 from datetime import date, time
 from typing import List
 
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, RootModel, constr, field_validator
+from pydantic import BaseModel, Field, constr
 
 
 class Item(BaseModel):
+    """
+    Represents an item in a receipt with a short description and price.
+
+    Attributes:
+        shortDescription (str): A short description of the product.
+        price (str): The price paid for the item. It should be in the format of a string representing a decimal number.
+    """
     shortDescription: constr() = Field( 
         ...,
         description="The Short Product Description for the item.",
@@ -24,6 +29,17 @@ class Item(BaseModel):
 
 
 class Receipt(BaseModel):
+    """
+    Represents a receipt that contains details about the purchase including retailer name, 
+    purchase date and time, items, and total price.
+
+    Attributes:
+        retailer (str): The name of the retailer or store where the receipt is from.
+        purchaseDate (date): The date the purchase was made.
+        purchaseTime (time): The time the purchase was made (in 24-hour format).
+        items (List[Item]): A list of items included in the receipt.
+        total (str): The total amount paid, formatted as a string representing a decimal number.
+    """
     retailer: constr() = Field(
         ...,
         description="The name of the retailer or store the receipt is from.",
@@ -50,8 +66,20 @@ class Receipt(BaseModel):
 
 
 class PointsResponse(BaseModel):
+    """
+    Represents the response for points calculation based on a receipt.
+
+    Attributes:
+        points (int): The total points earned for a purchase based on the receipt.
+    """
     points: int
 
 
 class ErrorResponse(BaseModel):
+    """
+    Represents an error response when a request fails.
+
+    Attributes:
+        detail (str): The detail of the error message explaining what went wrong.
+    """
     detail: str
