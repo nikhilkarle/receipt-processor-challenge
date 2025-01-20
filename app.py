@@ -14,15 +14,15 @@ from models import ErrorResponse, PointsResponse, Receipt
 
 app = FastAPI()
 
-logFilePath = "./logs/logs.out"
+LOGFILEPATH = "./logs/logs.out"
 
 handler = RotatingFileHandler(
-    filename=logFilePath,
+    filename=LOGFILEPATH,
     maxBytes=1024 * 1024,
     backupCount=3,
 )
 
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+formatter = logging.Formatter("%(message)s")
 handler.setFormatter(formatter)
 
 logger = logging.getLogger("ReceiptLogger")
