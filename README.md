@@ -1,3 +1,11 @@
+# How to Run
+
+Run the following command to build and start the application:
+docker compose up --build
+
+Once the application is running, you can go to the port Docker is running on and add /docs to view the Swagger documentation.
+For example: http://0.0.0.0:8000/docs
+
 # Receipt Processor
 
 Build a webservice that fulfils the documented API. The API is described below. A formal definition is provided 
