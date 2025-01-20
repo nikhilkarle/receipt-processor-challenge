@@ -14,9 +14,11 @@ from models import ErrorResponse, PointsResponse, Receipt
 
 app = FastAPI()
 
+logFilePath = "./logs/logs.out"
+
 handler = RotatingFileHandler(
-    filename="logs.out",  
-    maxBytes=1024*1024,  
+    filename=logFilePath,
+    maxBytes=1024 * 1024,
     backupCount=3,
 )
 
@@ -27,9 +29,9 @@ logger = logging.getLogger("ReceiptLogger")
 logger.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 
-receipts_db = {}
+receiptsDb = {}
 
-def calculate_points(receipt: Receipt) -> int:
+def calculatePoints(receipt: Receipt) -> int:
     """
     Calculate points based on the receipt data according to specific rules.
     Multiplier values are loaded from a config file.
@@ -41,51 +43,50 @@ def calculate_points(receipt: Receipt) -> int:
         int: The total points calculated based on the rules.
     """
     points = 0
-    retailer_name = receipt.retailer
-    for c in retailer_name:
+    retailerName = receipt.retailer
+    for c in retailerName:
         if c.isalnum():
-            points += CONFIG["retailer_name_multiplier"]
-    # points += sum(c.isalnum() for c in retailer_name) * CONFIG["retailer_name_multiplier"]
+            points += CONFIG["retailerNameMultiplier"]
     logger.debug("After Rule 1 (retailer name): %d points", points)
 
     total = float(receipt.total)
     if total.is_integer():
-        points += CONFIG["round_dollar_bonus"]
+        points += CONFIG["roundDollarBonus"]
     logger.debug("After Rule 2 (round dollar): %d points", points)
 
     if total % 0.25 == 0:
-        points += CONFIG["multiple_of_025_bonus"]
+        points += CONFIG["multipleOf025Bonus"]
     logger.debug("After Rule 3 (multiple of 0.25): %d points", points)
 
-    num_items = len(receipt.items)
-    points += (num_items // 2) * CONFIG["items_bonus_per_two"]
+    numItems = len(receipt.items)
+    points += (numItems // 2) * CONFIG["itemsBonusPerTwo"]
     logger.debug("After Rule 4 (two items): %d points", points)
 
     for item in receipt.items:
-        trimmed_description = item.shortDescription.strip()
-        if len(trimmed_description) % 3 == 0:
-            item_price = float(item.price)
-            points += math.ceil(item_price * CONFIG["item_description_multiplier"])
+        trimmedDescription = item.shortDescription.strip()
+        if len(trimmedDescription) % 3 == 0:
+            itemPrice = float(item.price)
+            points += math.ceil(itemPrice * CONFIG["itemDescriptionMultiplier"])
     logger.debug("After Rule 5 (item description): %d points", points)
 
-    #Rule 6: Haha, good try!
+    # Rule 6: Haha, good try!
 
-    purchase_date = receipt.purchaseDate
-    day = purchase_date.day
+    purchaseDate = receipt.purchaseDate
+    day = purchaseDate.day
     if day % 2 != 0:
-        points += CONFIG["odd_day_bonus"]
+        points += CONFIG["oddDayBonus"]
     logger.debug("After Rule 7 (odd day): %d points", points)
 
-    purchase_time = receipt.purchaseTime
-    if 14 <= purchase_time.hour < 16:
-        points += CONFIG["time_bonus"]
+    purchaseTime = receipt.purchaseTime
+    if 14 <= purchaseTime.hour < 16:
+        points += CONFIG["timeBonus"]
     logger.debug("After Rule 8 (time between 2-4pm): %d points", points)
 
     return points
 
 
 @app.exception_handler(RequestValidationError)
-async def custom_request_validation_exception_handler(request, exc):
+async def customRequestValidationExceptionHandler(request, exc):
     """
     Custom handler for validation errors.
 
@@ -104,7 +105,7 @@ async def custom_request_validation_exception_handler(request, exc):
 
 
 @app.post("/receipts/process", response_model=ErrorResponse)
-async def process_receipt(receipt: Receipt) -> JSONResponse:
+async def processReceipt(receipt: Receipt) -> JSONResponse:
     """
     Process a new receipt, generate a unique receipt ID, and store the receipt data.
 
@@ -114,35 +115,26 @@ async def process_receipt(receipt: Receipt) -> JSONResponse:
     Returns:
         JSONResponse: A response containing the unique receipt ID.
     """
-    # try:
-    receipt_id = str(uuid.uuid4())
-    receipt_dict = receipt.model_dump()
-    receipt_dict["id"] = receipt_id
+    receiptId = str(uuid.uuid4())
+    receiptDict = receipt.model_dump()
+    receiptDict["id"] = receiptId
 
-    receipts_db[receipt_id] = receipt_dict
+    receiptsDb[receiptId] = receiptDict
 
-    logger.info("Received receipt: %s", receipt_dict)
+    logger.info("Received receipt: %s", receiptDict)
 
-    logger.info("Receipt processed with ID: %s", receipt_id)
+    logger.info("Receipt processed with ID: %s", receiptId)
 
-    return JSONResponse(status_code=200, content={"id": receipt_id})
-
-    # except ValidationError as e:
-    #     # Catch Pydantic validation errors and return a 400 response
-    #     logger.error("Validation error: %s", e)
-    #     raise HTTPException(
-    #         status_code=400,
-    #         detail="Invalid receipt structure or missing fields."
-    #     )
+    return JSONResponse(status_code=200, content={"id": receiptId})
 
 
-@app.get("/receipts/{receipt_id}/points", response_model=PointsResponse)
-async def get_points(receipt_id: str) -> PointsResponse:
+@app.get("/receipts/{receiptId}/points", response_model=PointsResponse)
+async def getPoints(receiptId: str) -> PointsResponse:
     """
     Get the points for a specific receipt based on the receipt ID.
 
     Args:
-        receipt_id (str): The unique ID of the receipt.
+        receiptId (str): The unique ID of the receipt.
 
     Returns:
         PointsResponse: A response model containing the calculated points.
@@ -151,16 +143,16 @@ async def get_points(receipt_id: str) -> PointsResponse:
         HTTPException: If the receipt ID does not exist in the database.
     """
 
-    if receipt_id not in receipts_db:
-        logger.error("Receipt not found with ID: %s", receipt_id)
+    if receiptId not in receiptsDb:
+        logger.error("Receipt not found with ID: %s", receiptId)
         return JSONResponse(
             status_code=404,
-            content={"detail": f"Receipt with ID {receipt_id} not found."},
+            content={"detail": f"Receipt with ID {receiptId} not found."},
         )
 
-    receipt = Receipt(**receipts_db[receipt_id])
-    total_points = calculate_points(receipt)
+    receipt = Receipt(**receiptsDb[receiptId])
+    totalPoints = calculatePoints(receipt)
 
-    logger.info("Points calculated for receipt ID %s: %d points", receipt_id, total_points)
+    logger.info("Points calculated for receipt ID %s: %d points", receiptId, totalPoints)
 
-    return PointsResponse(points=total_points)
+    return PointsResponse(points=totalPoints)

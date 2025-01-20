@@ -1,9 +1,9 @@
 CONFIG = {
-    "retailer_name_multiplier": 1,
-    "round_dollar_bonus": 50,
-    "multiple_of_025_bonus": 25,
-    "items_bonus_per_two": 5,
-    "item_description_multiplier": 0.2,
-    "odd_day_bonus": 6,
-    "time_bonus": 10,
+    "retailerNameMultiplier": 1,
+    "roundDollarBonus": 50,
+    "multipleOf025Bonus": 25,
+    "itemsBonusPerTwo": 5,
+    "itemDescriptionMultiplier": 0.2,
+    "oddDayBonus": 6,
+    "timeBonus": 10,
 }
